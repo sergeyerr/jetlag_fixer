@@ -1,12 +1,11 @@
 Pros
 - multiple users
-- automated discovery of their sleep traits
-- intelegent suggestions based on their sleep traits and pools data
-- due to separation the llm logic from telegram interface, it is easier to add new interfaces
+- automated discovery of users' sleep traits
+- intelligent suggestions based on users' sleep traits and pools data
+- the LLM logic is separate from the Telegram frontend, so it is easy to add new frontends
 - messages are scheduled daily, from the next day 12pm till the time of flight - 20 minutes
 
-only meaningful messages (parsing states are scipped) are passed to the LLM memory, so it can track only the most important information
-
+only meaningful messages (parsing states are skipped) are passed to the LLM memory, so it trakcks only the most important information.
 
 assumption: users won't search other numbers
-no dublicate phone number in the pool
+no duplicate phone number in the pool
