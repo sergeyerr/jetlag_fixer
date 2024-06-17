@@ -15,40 +15,35 @@ from langgraph_utils import get_answer_for_auth_graph, reset_auth_graph, get_ans
 tg_token = os.environ.get('TELEGRAM_TOKEN')
 
 # Initialize in-memory SQLite database for checkpointing
-memory = SqliteSaver.from_conn_string(":memory:")
+memory = SqliteSaver.from_conn_string(":memory.db:")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def reset_state(user_id: int) -> None:
-    """
-    Reset the authentication graph and clears scheduler messages  for a user.
-    """
-    redis_registry = RedisConnectionSingleton().get_registry()
-    delete_schedule_messages_for_user(redis_registry, user_id)
-    
-    agent = AuthGraph(memory)
-    thread_config = {"configurable": {"thread_id": user_id}}
-    response = reset_auth_graph(agent, thread_config)
-    return response
-
 async def start(update: Update, context: CallbackContext) -> None:
     """
     Handle the /start command. Initialize the authentication graph and provide the initial response.
     """
     logger.info("Received /start command")
-    response = reset_state(update.message.from_user.id)
+    redis_registry = RedisConnectionSingleton().get_registry()
+    user_id = update.message.from_user.id
+    delete_schedule_messages_for_user(redis_registry, user_id)
+    
+    agent = AuthGraph(memory)
+    thread_config = {"configurable": {"thread_id": user_id}}
+    response = reset_auth_graph(agent, thread_config)
     await update.message.reply_text(response)
 
 async def clear(update: Update, context: CallbackContext) -> None:
     """
-    Handle the /clear command. Delete scheduled messages and reset the authentication graph.
+    Handle the /clear command. Delete scheduled messages.
     """
-    logger.info("Received /start command")
-    response = reset_state(update.message.from_user.id)
-    await update.message.reply_text(response)
+    logger.info("Received /clear command")
+    redis_registry = RedisConnectionSingleton().get_registry()
+    delete_schedule_messages_for_user(redis_registry, update.message.from_user.id)
+    await update.message.reply_text("Scheduled messages cleared.")
 
 async def handle_message(update: Update, context: CallbackContext) -> None:
     """
