@@ -8,7 +8,6 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
-# Import things that are needed generically
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import ToolException
 
@@ -32,7 +31,7 @@ class FlightInfoTool(BaseTool):
         """
         Fetches the next available flight information for a given flight number using the RapidAPI Flight Info API.
 
-        This function retrieves the next available flight within the current date and up to 30 days ahead from the given date (if provided, otherwise - current time).
+        This function retrieves the next available flight for the given date (if provided, otherwise - current time).
 
         Parameters:
         flight_number (str): The flight number in the format of a carrier code followed by a numeric part (e.g., 'AA100').
@@ -44,7 +43,7 @@ class FlightInfoTool(BaseTool):
             Returns an error message if there is an issue with the API request.
         """
         # can't search for flights in the past
-        if not search_date or search_date < datetime.now(search_date.tzinfo):
+        if search_date is None or search_date < datetime.now(search_date.tzinfo):
             search_date = datetime.now()
 
         search_date_str = search_date.strftime('%Y-%m-%d')
@@ -72,12 +71,14 @@ class FlightInfoTool(BaseTool):
         
         closest_flight = data[0]
         
+        if "scheduledTime" not in closest_flight["departure"]:
+            raise ToolException(f"No flights found for the date {search_date_str}. Please try another date.")
         
         flight_info = {
             'departure_date': closest_flight['departure']['scheduledTime']['local'],
             'departure_airport': closest_flight['departure']['airport']['iata'],
             'arrival_date': closest_flight['arrival']['scheduledTime']['local'] if "scheduledTime" in closest_flight['arrival'] else "N/A",
-            'arrival_airport': closest_flight['arrival']['airport']['iata'],
+            'arrival_airport': closest_flight['arrival']['airport']['iata'] if "iata" in closest_flight['arrival']['airport'] else "N/A"
         }
         
         #parse the date and time from format 2024-06-16 22:55+03:00 to datetime
